@@ -3,7 +3,7 @@
  * @author 	Alexis ROLLAND
  * @date	2022-02
  * @brief 	Low level library for SPI / PIC24 (PIC24FJ128GA010 fully tested)
- *  
+ *          v2 : 2024-02
  *
  */
 
@@ -13,8 +13,24 @@
 
 
 /* Déclarations des variables globales 	*/
+const   regAddr Tab_TRIS_addr[]={   (regAddr)&TRISA,
+                                    (regAddr)&TRISB,
+                                    (regAddr)&TRISC,
+                                    (regAddr)&TRISD,
+                                    (regAddr)&TRISE,
+                                    (regAddr)&TRISF,
+                                    (regAddr)&TRISG,    
+};
 
-
+const   regAddr Tab_LAT_addr[]={    (regAddr)&LATA,
+                                    (regAddr)&LATB,
+                                    (regAddr)&LATC,
+                                    (regAddr)&LATD,
+                                    (regAddr)&LATE,
+                                    (regAddr)&LATF,
+                                    (regAddr)&LATG,    
+};
+//-----------------------------------------------------------------------------
 /*	Implémentation du code */
 spi_err_t   spi_init(spi_id_t spi_id, spi_config_t* pSpiCFG, spi_desc_t *pSpi)
 {
@@ -103,6 +119,26 @@ spi_err_t   spi_init(spi_id_t spi_id, spi_config_t* pSpiCFG, spi_desc_t *pSpi)
     *(pSpi->pSPIxSTAT) = tmpReg;
     
     //------------------------------------------
+    // CS Pin config
+    pSpi->spiCS = pSpiCFG->spiCS;
+    
+    regAddr CStrisAddr = getTRIS(pSpi->spiCS.port);         /**< Get the TRIS address for the CS line   */
+    *CStrisAddr &= ~((0x0001)<<(pSpi->spiCS.bitNumber));    /**< Config CS line as GPIO output  */
+    spi_deassertCS(pSpi);
+    
+    //------------------------------------------
+    return SPI_OK;
+}
+//------------------------------------------------------------------------------
+spi_err_t   spi_assertCS(const  spi_desc_t *pSpi){
+    regAddr CSlatAddr = getLAT(pSpi->spiCS.port);
+    *CSlatAddr &= ~((0x0001)<<(pSpi->spiCS.bitNumber));
+    return SPI_OK;
+}
+//------------------------------------------------------------------------------
+spi_err_t   spi_deassertCS(const  spi_desc_t *pSpi){
+    regAddr CSlatAddr = getLAT(pSpi->spiCS.port);
+    *CSlatAddr |= ((0x0001)<<(pSpi->spiCS.bitNumber));
     return SPI_OK;
 }
 //------------------------------------------------------------------------------

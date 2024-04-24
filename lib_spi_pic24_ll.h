@@ -3,7 +3,7 @@
  * @author 	Alexis ROLLAND
  * @date	2023/04
  * @brief 	Low level library for SPI / PIC24 (PIC24FJ128GA010 fully tested)
- *  
+ *          v2 : 2024-04 
  *
  */
 
@@ -12,6 +12,27 @@
 #include <xc.h>
 #include <stddef.h>     // for size_t
 
+//-----------------------------------------------------------------------------
+typedef uint16_t*    regAddr;       /**<    Alias to uint16_t*  */
+//-----------------------------------------------------------------------------
+// Enums for the CS support
+typedef enum {
+            GPIO_PORTA = 0,             /**< GPIO port is PORTA */
+            GPIO_PORTB = 1,             /**< GPIO port is PORTB */
+            GPIO_PORTC = 2,             /**< GPIO port is PORTC */
+            GPIO_PORTD = 3,             /**< GPIO port is PORTD */
+            GPIO_PORTE = 4,             /**< GPIO port is PORTF */
+            GPIO_PORTF = 5,             /**< GPIO port is PORTG */        
+            GPIO_PORTG = 6              /**< GPIO port is PORTG */                
+} gpio_port_t;
+
+typedef struct{
+    gpio_port_t port;                       /**<    GPIO Port   */
+    uint8_t     bitNumber;                  /**<    Bit of GPIO register associated with GPIO   */
+} gpio_pin_t;  
+
+#define getTRIS(port) {Tab_TRIS_addr[(uint8_t)port]};   /**< macro based getTRIS  */
+#define getLAT(port) {Tab_LAT_addr[(uint8_t)port]};   /**< macro based getLAT  */
 //-----------------------------------------------------------------------------
 // Masks for SPIxSTAT register
 #define SPIEN_MASK  (0x0001 << 15)  /**< SPIxSTAT[15] */
@@ -91,6 +112,7 @@ typedef struct{
     spiDataFormat_t     spiDataFormat;
     tPriPrescaler       spiPrimaryPrescaler;
     tSecPrescaler       spiSecondaryPrescaler;
+    gpio_pin_t          spiCS;
     } spi_config_t;
                     
 /** Type spi_desc_t
@@ -99,13 +121,29 @@ typedef struct{
  */
 typedef struct {
     spi_id_t    spiID;
-    uint16_t    *pSPIxSTAT;
-    uint16_t    *pSPIxCON1;
-    uint16_t    *pSPIxCON2;
-    uint16_t    *pSPIBUF;
+    regAddr     pSPIxSTAT;
+    regAddr     pSPIxCON1;
+    regAddr     pSPIxCON2;
+    regAddr     pSPIBUF;
     spiDataFormat_t     spiDataFormat;
+    gpio_pin_t          spiCS;
     } spi_desc_t;            
 
+/**
+ * @brief  Asserts the CS Line
+ * 
+ * @param[in]  pSpi  Address of the Spi module descriptor
+ * @return  SPI_OK   
+ */
+spi_err_t   spi_assertCS(const  spi_desc_t *pSpi);
+
+/**
+ * @brief  DeAsserts the CS Line
+ * 
+ * @param[in]  pSpi  Address of the Spi module descriptor
+ * @return  SPI_OK   
+ */
+spi_err_t   spi_deassertCS(const  spi_desc_t *pSpi);
                             
 /**
  * @brief   Initialize the SPI module

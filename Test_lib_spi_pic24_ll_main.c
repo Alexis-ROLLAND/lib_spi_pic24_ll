@@ -1,8 +1,11 @@
 /**
- * @file Template_Main_C.c 
+ * @file    Test_lib_spi_ll_pic24.c 
  * @author 	Alexis ROLLAND
- * @date	2021-12-30
- * @brief 	Template for PIC24 main app
+ * @date	2024-04
+ * @brief 	Test app for low level SPI driver
+ *          Needs a Explorer 16/32 board
+ *          with a PIC24FJ128GA010
+ *          The Jumper J27 (for P79_EECS) must be ON
  *  
  *
  */
@@ -35,8 +38,6 @@
 
 
 /* Déclarations des variables globales 	*/
-extern spi_desc_t  mySpi;
-uint16_t RxData[4];
 
 
 /* Programme Principal			*/
@@ -50,18 +51,10 @@ Initialiser();		// Appel fonction d'initialisation
 
 while(1)
     {
-    __delay_ms(100);
-    CS_LOW();
+    mainTask();
     
     
-    spi_transfert(&mySpi, 0x0011, &RxData[0]);
-    spi_transfert(&mySpi, 0x0022, &RxData[1]);
-    spi_transfert(&mySpi, 0x0044, &RxData[2]);
-    spi_transfert(&mySpi, 0x0088, &RxData[3]);
     
-    
-    CS_HIGH();
-    LATAbits.LATA0 = ~LATAbits.LATA0;
     }
 }					
 

@@ -1,13 +1,13 @@
 /**
- * @file Template_lib_Appli_H.h 
+ * @file    lib_test_lib_spi_ll_pic24.h 
  * @author 	Alexis ROLLAND
- * @date	2021-12-30
- * @brief 	Template for PIC24 main app
+ * @date	2024-04
+ * @brief 	Header file for Lib app for lib_spi_ll_pic24 test app
  *  
  *
  */
-#ifndef	__LIB_APP_H__
-#define	__LIB_APP_H__
+#ifndef	__LIB_TEST_LIB_SPI_LL_PIC24_H__
+#define	__LIB_TEST_LIB_SPI_LL_PIC24_H__
 
 #ifndef FCY
 #define FCY 4000000UL
@@ -20,11 +20,6 @@
 
 #define SPI_MODULE  _SPI1
 
-#define CS_PIN      LATBbits.LATB2      //b23
-#define TRIS_CS     TRISBbits.TRISB2
-
-#define CS_LOW()    CS_PIN=0
-#define CS_HIGH()   CS_PIN=1
 
 /**
  * @brief Global init function/task 
@@ -44,7 +39,8 @@ void Initialiser(void);
  * @return   
  *
  */
- 
+void    mainTask(void);
+
  /**
  * @brief  
  * 
@@ -66,7 +62,7 @@ void Initialiser(void);
  
 
 
-#endif
+#endif  /*  __LIB_TEST_LIB_SPI_LL_PIC24_H__ */
 
 
 
