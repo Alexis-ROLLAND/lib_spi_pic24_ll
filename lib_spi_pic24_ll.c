@@ -124,7 +124,7 @@ spi_err_t   spi_init(spi_id_t spi_id, spi_config_t* pSpiCFG, spi_desc_t *pSpi)
     
     regAddr CStrisAddr = getTRIS(pSpi->spiCS.port);         /**< Get the TRIS address for the CS line   */
     *CStrisAddr &= ~((0x0001)<<(pSpi->spiCS.bitNumber));    /**< Config CS line as GPIO output  */
-    spi_deassertCS(pSpi);
+    spi_deassertCS(pSpi);                                   /**< Deasserts the CS line  (CS <- 1) */
     
     //------------------------------------------
     return SPI_OK;
@@ -142,7 +142,7 @@ spi_err_t   spi_deassertCS(const  spi_desc_t *pSpi){
     return SPI_OK;
 }
 //------------------------------------------------------------------------------
-spi_err_t   spi_transfer_raw_byte(spi_desc_t *pSpi, uint8_t TxData, uint8_t *pRxData){
+spi_err_t   spi_transfer_raw_byte(const spi_desc_t *pSpi, uint8_t TxData, uint8_t *pRxData){
     uint16_t    dummy;   
     if (pSpi->spiDataFormat != BITS8) return SPI_BAD_DATA_FORMAT;
     switch(pSpi->spiID)
@@ -168,7 +168,7 @@ spi_err_t   spi_transfer_raw_byte(spi_desc_t *pSpi, uint8_t TxData, uint8_t *pRx
     return SPI_OK;
 }
 //------------------------------------------------------------------------------
-spi_err_t   spi_transfer_raw_word(spi_desc_t *pSpi, uint16_t TxData, uint16_t *pRxData){
+spi_err_t   spi_transfer_raw_word(const spi_desc_t *pSpi, uint16_t TxData, uint16_t *pRxData){
     uint16_t    dummy;   
     if (pSpi->spiDataFormat != BITS16) return SPI_BAD_DATA_FORMAT;
     switch(pSpi->spiID)
@@ -194,7 +194,7 @@ spi_err_t   spi_transfer_raw_word(spi_desc_t *pSpi, uint16_t TxData, uint16_t *p
     return SPI_OK;
 }
 //------------------------------------------------------------------------------
-spi_err_t   spi_transfer_raw_bytes(spi_desc_t *pSpi, const uint8_t *pTxData, uint8_t *pRxData, size_t len){
+spi_err_t   spi_transfer_raw_bytes(const spi_desc_t *pSpi, const uint8_t *pTxData, uint8_t *pRxData, size_t len){
     spi_err_t res;
     size_t  i;
     if (pSpi->spiDataFormat != BITS8) return SPI_BAD_DATA_FORMAT;
@@ -205,7 +205,7 @@ spi_err_t   spi_transfer_raw_bytes(spi_desc_t *pSpi, const uint8_t *pTxData, uin
     return SPI_OK;
 }
 //------------------------------------------------------------------------------
-spi_err_t   spi_transfer_raw_words(spi_desc_t *pSpi, const uint16_t *pTxData, uint16_t *pRxData, size_t len){
+spi_err_t   spi_transfer_raw_words(const spi_desc_t *pSpi, const uint16_t *pTxData, uint16_t *pRxData, size_t len){
     spi_err_t res;
     size_t  i;
     if (pSpi->spiDataFormat != BITS16) return SPI_BAD_DATA_FORMAT;
@@ -216,7 +216,7 @@ spi_err_t   spi_transfer_raw_words(spi_desc_t *pSpi, const uint16_t *pTxData, ui
     return SPI_OK;
 }
 //------------------------------------------------------------------------------
-spi_err_t   spi_transfer_byte_reg(spi_desc_t *pSpi, uint8_t reg, uint8_t dataOut, uint8_t *pdataIn){
+spi_err_t   spi_transfer_byte_reg(const spi_desc_t *pSpi, uint8_t reg, uint8_t dataOut, uint8_t *pdataIn){
     spi_err_t res;
     if (pSpi->spiDataFormat != BITS8) return SPI_BAD_DATA_FORMAT;
     
@@ -228,7 +228,7 @@ spi_err_t   spi_transfer_byte_reg(spi_desc_t *pSpi, uint8_t reg, uint8_t dataOut
     return SPI_OK;
 }
 //------------------------------------------------------------------------------
-spi_err_t   spi_transfer_word_reg(spi_desc_t *pSpi, uint16_t reg, uint16_t dataOut, uint16_t *pdataIn){
+spi_err_t   spi_transfer_word_reg(const spi_desc_t *pSpi, uint16_t reg, uint16_t dataOut, uint16_t *pdataIn){
     spi_err_t res;
     if (pSpi->spiDataFormat != BITS16) return SPI_BAD_DATA_FORMAT;
     
@@ -240,7 +240,7 @@ spi_err_t   spi_transfer_word_reg(spi_desc_t *pSpi, uint16_t reg, uint16_t dataO
     return SPI_OK;
 }
 //------------------------------------------------------------------------------
-spi_err_t   spi_transfer_byte_regs(spi_desc_t *pSpi, uint8_t reg, const uint8_t *out, uint8_t *in, size_t len){
+spi_err_t   spi_transfer_byte_regs(const spi_desc_t *pSpi, uint8_t reg, const uint8_t *out, uint8_t *in, size_t len){
     spi_err_t res;
     size_t i = 0;
     if (pSpi->spiDataFormat != BITS8) return SPI_BAD_DATA_FORMAT;
@@ -255,7 +255,7 @@ spi_err_t   spi_transfer_byte_regs(spi_desc_t *pSpi, uint8_t reg, const uint8_t 
     return SPI_OK;
 }
 //------------------------------------------------------------------------------
-spi_err_t   spi_transfer_word_regs(spi_desc_t *pSpi, uint16_t reg, const uint16_t *out, uint16_t *in, size_t len){
+spi_err_t   spi_transfer_word_regs(const spi_desc_t *pSpi, uint16_t reg, const uint16_t *out, uint16_t *in, size_t len){
     spi_err_t res;
     size_t i = 0;
     if (pSpi->spiDataFormat != BITS16) return SPI_BAD_DATA_FORMAT;

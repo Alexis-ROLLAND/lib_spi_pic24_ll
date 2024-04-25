@@ -18,7 +18,7 @@
 
 #include "lib_spi_pic24_ll.h"
 
-#define SPI_MODULE  _SPI1
+#define SPI_MODULE  _SPI2
 
 
 /**

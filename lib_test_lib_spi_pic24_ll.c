@@ -38,7 +38,7 @@ void Initialiser(void)
     
     // SPI
     spiCfg.spiClockPolarity = CLK_IDLE_IS_LOW;
-    spiCfg.spiClockPhase = IDLE_TO_ACTIVE_CPHASE;
+    spiCfg.spiClockPhase = ACTIVE_TO_IDLE_CPHASE;
     spiCfg.spiDataFormat = BITS8;
     spiCfg.spiSamplePoint = MID_SMP;
     spiCfg.spiPrimaryPrescaler = PRI_PRE_4;
@@ -48,7 +48,10 @@ void Initialiser(void)
     
     spi_init(SPI_MODULE, &spiCfg, &mySpi);
     
-    
+    // Send WREN
+    spi_assertCS(&mySpi);
+    spi_transfer_raw_byte(&mySpi, 0x06, NULL);  // Send WREN Code
+    spi_deassertCS(&mySpi);
     
 
 }
@@ -61,6 +64,8 @@ void    mainTask(void){
     __delay_ms(500);
     LATAbits.LATA0 = 1;
     
+    
+    
     // Write 16 bytes @0x00 to @0x0F, with address values
     if (!WriteOnce) {
         spi_assertCS(&mySpi);
@@ -72,6 +77,8 @@ void    mainTask(void){
     }
     __delay_ms(500);
     LATAbits.LATA0 = 0;
+    
+    
     // Read 16 bytes
     spi_assertCS(&mySpi);
     spi_transfer_raw_byte(&mySpi, 0x03, NULL);  // Send Read Code

@@ -15,7 +15,7 @@
 //-----------------------------------------------------------------------------
 typedef uint16_t*    regAddr;       /**<    Alias to uint16_t*  */
 //-----------------------------------------------------------------------------
-// Enums for the CS support
+// Enums & types for the CS support
 typedef enum {
             GPIO_PORTA = 0,             /**< GPIO port is PORTA */
             GPIO_PORTB = 1,             /**< GPIO port is PORTB */
@@ -32,7 +32,7 @@ typedef struct{
 } gpio_pin_t;  
 
 #define getTRIS(port) {Tab_TRIS_addr[(uint8_t)port]};   /**< macro based getTRIS  */
-#define getLAT(port) {Tab_LAT_addr[(uint8_t)port]};   /**< macro based getLAT  */
+#define getLAT(port) {Tab_LAT_addr[(uint8_t)port]};     /**< macro based getLAT  */
 //-----------------------------------------------------------------------------
 // Masks for SPIxSTAT register
 #define SPIEN_MASK  (0x0001 << 15)  /**< SPIxSTAT[15] */
@@ -97,7 +97,7 @@ typedef  enum   {   PRI_PRE_64,     /**< Primary Prescaler is 1:64  */
                     
 typedef enum    {   SPI_OK,                 /**< Succes value                           */
                     SPI_ERROR,              /**< Non Specific Error                     */
-                    SPI_BAD_DATA_FORMAT,      /**< error in data size : 8bits vs 16 bits  */
+                    SPI_BAD_DATA_FORMAT,    /**< error in data size : 8bits vs 16 bits  */
                     SPI_UNKNOWN_MODULE      /**< The SPI Module ID is unknown           */
                     } spi_err_t; 
                     
@@ -106,27 +106,27 @@ typedef enum    {   SPI_OK,                 /**< Succes value                   
  * 
  */
 typedef struct{
-    clock_polarity_t    spiClockPolarity;
-    clock_phase_t       spiClockPhase;
-    spiSamplePoint_t    spiSamplePoint;
-    spiDataFormat_t     spiDataFormat;
-    tPriPrescaler       spiPrimaryPrescaler;
-    tSecPrescaler       spiSecondaryPrescaler;
-    gpio_pin_t          spiCS;
+    clock_polarity_t    spiClockPolarity;   /**< Clock Polarity : CLK_IDLE_IS_LOW or CLK_IDLE_IS_HIGH   */
+    clock_phase_t       spiClockPhase;      /**< Clock Phase : IDLE_TO_ACTIVE_CPHASE or ACTIVE_TO_IDLE_CPHASE */
+    spiSamplePoint_t    spiSamplePoint;     /**< Sample Point : MID_SMP or END_SMP */
+    spiDataFormat_t     spiDataFormat;      /**< Data format : BITS8 or BITS16 */
+    tPriPrescaler       spiPrimaryPrescaler;    /**< Primary Prescaler : PRI_PRE_x (x = 1, 4, 16 or 64) */
+    tSecPrescaler       spiSecondaryPrescaler;  /**< Secondary Prescaler : SEC_PRE_x (x is between 1 and 8) */
+    gpio_pin_t          spiCS;              /**< Use gpio_pint_t to specify CS line */
     } spi_config_t;
                     
 /** Type spi_desc_t
- * 
+ *  For internal use only
  * 
  */
 typedef struct {
-    spi_id_t    spiID;
-    regAddr     pSPIxSTAT;
-    regAddr     pSPIxCON1;
-    regAddr     pSPIxCON2;
-    regAddr     pSPIBUF;
-    spiDataFormat_t     spiDataFormat;
-    gpio_pin_t          spiCS;
+    spi_id_t    spiID;      /**< ID of the SPI module (_SPI1 or _SPI2)  */
+    regAddr     pSPIxSTAT;  /**< Address of the real SPIxSTAT register  */
+    regAddr     pSPIxCON1;  /**< Address of the real SPIxCON1 register  */
+    regAddr     pSPIxCON2;  /**< Address of the real SPIxCON2 register  */
+    regAddr     pSPIBUF;    /**< Address of the real SPIxBUF register  */
+    spiDataFormat_t     spiDataFormat;  /**< SPI Data format    */
+    gpio_pin_t          spiCS;  /**< GPIO pin used as CS    */
     } spi_desc_t;            
 
 /**
@@ -150,7 +150,7 @@ spi_err_t   spi_deassertCS(const  spi_desc_t *pSpi);
  * 
  * @param[in]   ID of the target SPI module (_SPI1 or _SPI2)
  * @param[in]   Address of the fully completed spi_config_t structure
- * @param[out]  Spi module descriptor  	
+ * @param[out]  Spi module descriptor (fully completed)  	
  * 
  * @return  SPI_OK
  * @return  SPI_UNKNOWN_MODULE 
@@ -174,8 +174,8 @@ spi_err_t   spi_init(spi_id_t spi_id, spi_config_t* pSpiCFG, spi_desc_t *pSpi);
   *              function, and deasserted once the tranfert is fully completed
   * 
   */
-spi_err_t   spi_transfer_raw_byte(spi_desc_t *pSpi, uint8_t TxData, uint8_t *pRxData);
-spi_err_t   spi_transfer_raw_word(spi_desc_t *pSpi, uint16_t TxData, uint16_t *pRxData);
+spi_err_t   spi_transfer_raw_byte(const spi_desc_t *pSpi, uint8_t TxData, uint8_t *pRxData);
+spi_err_t   spi_transfer_raw_word(const spi_desc_t *pSpi, uint16_t TxData, uint16_t *pRxData);
 
 /**
  * @brief   Initiates a SPI NbBytes transfer based using the Spi module descriptor  
@@ -194,8 +194,8 @@ spi_err_t   spi_transfer_raw_word(spi_desc_t *pSpi, uint16_t TxData, uint16_t *p
  * @attention : The CS line must be asserted by the user before calling this 
  *              function, and deasserted once the tranfert is fully completed
  */
-spi_err_t   spi_transfer_raw_bytes(spi_desc_t *pSpi, const uint8_t *pTxData, uint8_t *pRxData, size_t len);
-spi_err_t   spi_transfer_raw_words(spi_desc_t *pSpi, const uint16_t *pTxData, uint16_t *pRxData, size_t len);
+spi_err_t   spi_transfer_raw_bytes(const spi_desc_t *pSpi, const uint8_t *pTxData, uint8_t *pRxData, size_t len);
+spi_err_t   spi_transfer_raw_words(const spi_desc_t *pSpi, const uint16_t *pTxData, uint16_t *pRxData, size_t len);
 
 /**
  * @brief   Transfer one byte to/from a given register address
@@ -215,8 +215,8 @@ spi_err_t   spi_transfer_raw_words(spi_desc_t *pSpi, const uint16_t *pTxData, ui
  * @return     SPI_UNKNOWN_MODULE 
  * @return     SPI_BAD_DATA_FORMAT
  */
-spi_err_t   spi_transfer_byte_reg(spi_desc_t *pSpi, uint8_t reg, uint8_t dataOut, uint8_t *pdataIn);
-spi_err_t   spi_transfer_word_reg(spi_desc_t *pSpi, uint16_t reg, uint16_t dataOut, uint16_t *pdataIn);
+spi_err_t   spi_transfer_byte_reg(const spi_desc_t *pSpi, uint8_t reg, uint8_t dataOut, uint8_t *pdataIn);
+spi_err_t   spi_transfer_word_reg(const spi_desc_t *pSpi, uint16_t reg, uint16_t dataOut, uint16_t *pdataIn);
 
 /**
  * @brief   Transfer a number of bytes to/from a given register address
@@ -237,10 +237,10 @@ spi_err_t   spi_transfer_word_reg(spi_desc_t *pSpi, uint16_t reg, uint16_t dataO
  * @return     SPI_UNKNOWN_MODULE 
  * @return     SPI_BAD_DATA_FORMAT
  */
-spi_err_t   spi_transfer_byte_regs(spi_desc_t *pSpi, uint8_t reg, const uint8_t *out, uint8_t *in, size_t len);
-spi_err_t   spi_transfer_word_regs(spi_desc_t *pSpi, uint16_t reg, const uint16_t *out, uint16_t *in, size_t len);
+spi_err_t   spi_transfer_byte_regs(const spi_desc_t *pSpi, uint8_t reg, const uint8_t *out, uint8_t *in, size_t len);
+spi_err_t   spi_transfer_word_regs(const spi_desc_t *pSpi, uint16_t reg, const uint16_t *out, uint16_t *in, size_t len);
 
 
-#endif
+#endif  /*  __LIB_SPI_PIC24_LL_H__  */
 
 
