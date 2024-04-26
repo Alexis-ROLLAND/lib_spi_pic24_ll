@@ -29,7 +29,7 @@ typedef enum {
 typedef struct{
     gpio_port_t port;                       /**<    GPIO Port   */
     uint8_t     bitNumber;                  /**<    Bit of GPIO register associated with GPIO   */
-} gpio_pin_t;  
+} spi_cs_t;  
 
 #define getTRIS(port) {Tab_TRIS_addr[(uint8_t)port]};   /**< macro based getTRIS  */
 #define getLAT(port) {Tab_LAT_addr[(uint8_t)port]};     /**< macro based getLAT  */
@@ -46,7 +46,14 @@ typedef struct{
 #define SSEN_MASK   (0x0001 << 7)   /**< SPIxCON1[7] */
 #define CKP_MASK    (0x0001 << 6)   /**< SPIxCON1[6] */
 #define MSTEN_MASK  (0x0001 << 5)   /**< SPIxCON1[5] */
+
+//  Masks for the IFS registers
+#define SPI1IF_MASK (0x0001 << 10)   /**< IFS1[10] */
+#define SPI2IF_MASK (0x0001 << 1)   /**< IFS2[1] */
+
 //-----------------------------------------------------------------------------
+#define ClrIFS()    {*(pSpi->pIFSreg) &= ~pSpi->IFSMask;}
+
 
 //-----------------------------------------------------------------------------
 typedef enum    {   _SPI1,      /**< Value for SPI1 module */
@@ -111,7 +118,6 @@ typedef struct{
     spiDataFormat_t     spiDataFormat;      /**< Data format : BITS8 or BITS16 */
     tPriPrescaler       spiPrimaryPrescaler;    /**< Primary Prescaler : PRI_PRE_x (x = 1, 4, 16 or 64) */
     tSecPrescaler       spiSecondaryPrescaler;  /**< Secondary Prescaler : SEC_PRE_x (x is between 1 and 8) */
-    gpio_pin_t          spiCS;              /**< Use gpio_pint_t to specify CS line */
 } spi_config_t;
                     
 /** 
@@ -124,26 +130,11 @@ typedef struct {
     regAddr     pSPIxCON1;  /**< Address of the real SPIxCON1 register  */
     regAddr     pSPIxCON2;  /**< Address of the real SPIxCON2 register  */
     regAddr     pSPIBUF;    /**< Address of the real SPIxBUF register  */
+    regAddr     pIFSreg;    /**< Address of the real IFS register   */
+    uint16_t    IFSMask;    /**< Mask for the SPIxIF    */
     spiDataFormat_t     spiDataFormat;  /**< SPI Data format    */
-    gpio_pin_t          spiCS;  /**< GPIO pin used as CS    */
 } spi_desc_t;            
 
-/**
- * @brief  Asserts the CS Line
- * 
- * @param[in]  pSpi  Address of the Spi module descriptor
- * @return  SPI_OK   
- */
-spi_err_t   spi_assertCS(const  spi_desc_t *pSpi);
-
-/**
- * @brief  DeAsserts the CS Line
- * 
- * @param[in]  pSpi  Address of the Spi module descriptor
- * @return  SPI_OK   
- */
-spi_err_t   spi_deassertCS(const  spi_desc_t *pSpi);
-                            
 /**
  * @brief   Initialize the SPI module
  * 
@@ -155,11 +146,40 @@ spi_err_t   spi_deassertCS(const  spi_desc_t *pSpi);
  * @return  SPI_UNKNOWN_MODULE if SPI module is unknown 
  */
 spi_err_t   spi_init(spi_id_t spi_id, spi_config_t* pSpiCFG, spi_desc_t *pSpi);
-    
- /**
+
+/**
+ * @brief   Configures the CS line as GPIO output
+ * 
+ * @param
+ * @return  SPI_OK   
+ */
+spi_err_t   spi_init_cs(spi_desc_t *pSpi,const spi_cs_t *pCs);
+
+/**
+ * @brief  Asserts the CS Line
+ * 
+ * @param[in]  pSpi Address of the Spi module descriptor
+ * @param[in]  pCs  Address of the Cs structure for the Chip Select
+ * 
+ * @return  SPI_OK   
+ */
+spi_err_t   spi_assertCS(const  spi_desc_t *pSpi, const spi_cs_t *pCs);
+
+/**
+ * @brief  DeAsserts the CS Line
+ * 
+ * @param[in]  pSpi  Address of the Spi module descriptor
+ * @param[in]  pCs  Address of the Cs structure for the Chip Select
+ * 
+ * @return  SPI_OK   
+ */
+spi_err_t   spi_deassertCS(const  spi_desc_t *pSpi, const spi_cs_t *pCs);
+                            
+  /**
   * @brief      Initiates a SPI transfer based using the Spi module descriptor  
   *             Data format is 8 bits
   * @param[in]  pSpi    Address of the initialized Spi module descriptor
+  * @param[in]  pCs  Address of the Cs structure for the Chip Select
   * @param[in]  TxData  Data to Tx
   * @param[out] pRxData Address of the location to store the Rx data or NULL   	
   * 
@@ -175,6 +195,7 @@ spi_err_t   spi_transfer_raw_byte(const spi_desc_t *pSpi, uint8_t TxData, uint8_
   * @brief      Initiates a SPI transfer based using the Spi module descriptor  
   *             Data format is 16 bits
   * @param[in]  pSpi    Address of the initialized Spi module descriptor
+  * @param[in]  pCs  Address of the Cs structure for the Chip Select
   * @param[in]  TxData  Data to Tx
   * @param[out] pRxData Address of the location to store the Rx data or NULL   	
   * 
@@ -191,6 +212,7 @@ spi_err_t   spi_transfer_raw_word(const spi_desc_t *pSpi, uint16_t TxData, uint1
  * @brief   Initiates a SPI NbBytes transfer based using the Spi module descriptor  
  *          Data format is 8 bits
  * @param[in]  pSpi     Address of the Spi module descriptor
+ * @param[in]  pCs  Address of the Cs structure for the Chip Select
  * @param[in]  pTxData  Address of Data to Tx
  * @param[out] pRxData  Address of the location to store the Rx data   	
  * @param[in]  len      number of bytes to transfer 
@@ -207,6 +229,7 @@ spi_err_t   spi_transfer_raw_bytes(const spi_desc_t *pSpi, const uint8_t *pTxDat
  * @brief   Initiates a SPI NbBytes transfer based using the Spi module descriptor  
  *          Data format is 16 bits
  * @param[in]  pSpi     Address of the Spi module descriptor
+ * @param[in]  pCs  Address of the Cs structure for the Chip Select
  * @param[in]  pTxData  Address of Data to Tx
  * @param[out] pRxData  Address of the location to store the Rx data   	
  * @param[in]  len      number of bytes to transfer 
@@ -226,6 +249,7 @@ spi_err_t   spi_transfer_raw_words(const spi_desc_t *pSpi, const uint16_t *pTxDa
  * implement a register based access scheme (8 bits mode).
  * 
  * @param[in]   pSpi    Address of the Spi module descriptor
+ * @param[in]   pCs  Address of the Cs structure for the Chip Select
  * @param[in]   reg     register address to transfer data to/from
  * @param[in]   dataOut byte to send
  * @param[out]   pdataIn Address of the location of the read data or NULL 
@@ -242,6 +266,7 @@ spi_err_t   spi_transfer_byte_reg(const spi_desc_t *pSpi, uint8_t reg, uint8_t d
  * implement a register based access scheme (16 bits mode).
  * 
  * @param[in]   pSpi    Address of the Spi module descriptor
+ * @param[in]  pCs  Address of the Cs structure for the Chip Select
  * @param[in]   reg     register address to transfer data to/from
  * @param[in]   dataOut Word to send
  * @param[out]  pdataIn Address of the location of the read data or NULL 
@@ -258,6 +283,7 @@ spi_err_t   spi_transfer_word_reg(const spi_desc_t *pSpi, uint16_t reg, uint16_t
  * implement a register based access scheme (8 bits mode).
  * 
  * @param[in]   pSpi    Address of the Spi module descriptor
+ * @param[in]   pCs  Address of the Cs structure for the Chip Select
  * @param[in]   reg     first register address to transfer data to/from
  * @param[in]   out     buffer to send data from, set NULL if only receiving
  * @param[out]  in      buffer to read into, set NULL if only sending
@@ -275,6 +301,7 @@ spi_err_t   spi_transfer_byte_regs(const spi_desc_t *pSpi, uint8_t reg, const ui
  * implement a register based access scheme (16 bits mode).
  * 
  * @param[in]   pSpi    Address of the Spi module descriptor
+ * @param[in]   pCs     Address of the Cs structure for the Chip Select
  * @param[in]   reg     first register address to transfer data to/from
  * @param[in]   out     buffer to send data from, set NULL if only receiving
  * @param[out]  in      buffer to read into, set NULL if only sending

@@ -38,18 +38,20 @@ spi_err_t   spi_init(spi_id_t spi_id, spi_config_t* pSpiCFG, spi_desc_t *pSpi)
     pSpi->spiID = spi_id;
     switch(spi_id){
         case _SPI1:
-            pSpi->pSPIxSTAT = (uint16_t*)&SPI1STAT;
-            pSpi->pSPIxCON1 = (uint16_t*)&SPI1CON1;
-            pSpi->pSPIxCON2 = (uint16_t*)&SPI1CON2;
-            pSpi->pSPIBUF = (uint16_t*)&SPI1BUF;
-            IFS0bits.SPI1IF = 0;
+            pSpi->pSPIxSTAT = (regAddr)&SPI1STAT;
+            pSpi->pSPIxCON1 = (regAddr)&SPI1CON1;
+            pSpi->pSPIxCON2 = (regAddr)&SPI1CON2;
+            pSpi->pSPIBUF = (regAddr)&SPI1BUF;
+            pSpi->pIFSreg = (regAddr)&IFS0;
+            pSpi->IFSMask = SPI1IF_MASK;
             break;
         case _SPI2:
-            pSpi->pSPIxSTAT = (uint16_t*)&SPI2STAT;
-            pSpi->pSPIxCON1 = (uint16_t*)&SPI2CON1;
-            pSpi->pSPIxCON2 = (uint16_t*)&SPI2CON2;
-            pSpi->pSPIBUF = (uint16_t*)&SPI2BUF;
-            IFS2bits.SPI2IF = 0;
+            pSpi->pSPIxSTAT = (regAddr)&SPI2STAT;
+            pSpi->pSPIxCON1 = (regAddr)&SPI2CON1;
+            pSpi->pSPIxCON2 = (regAddr)&SPI2CON2;
+            pSpi->pSPIBUF = (regAddr)&SPI2BUF;
+            pSpi->pIFSreg = (regAddr)&IFS2;
+            pSpi->IFSMask = SPI2IF_MASK;
             break;
         default:
             return SPI_UNKNOWN_MODULE;
@@ -119,51 +121,43 @@ spi_err_t   spi_init(spi_id_t spi_id, spi_config_t* pSpiCFG, spi_desc_t *pSpi)
     *(pSpi->pSPIxSTAT) = tmpReg;
     
     //------------------------------------------
-    // CS Pin config
-    pSpi->spiCS = pSpiCFG->spiCS;
-    
-    regAddr CStrisAddr = getTRIS(pSpi->spiCS.port);         /**< Get the TRIS address for the CS line   */
-    *CStrisAddr &= ~((0x0001)<<(pSpi->spiCS.bitNumber));    /**< Config CS line as GPIO output  */
-    spi_deassertCS(pSpi);                                   /**< Deasserts the CS line  (CS <- 1) */
+    // IFS
+    //*(pSpi->pIFSreg) &= ~pSpi->IFSMask;
+    ClrIFS();
     
     //------------------------------------------
     return SPI_OK;
 }
 //------------------------------------------------------------------------------
-spi_err_t   spi_assertCS(const  spi_desc_t *pSpi){
-    regAddr CSlatAddr = getLAT(pSpi->spiCS.port);
-    *CSlatAddr &= ~((0x0001)<<(pSpi->spiCS.bitNumber));
+spi_err_t   spi_init_cs(spi_desc_t *pSpi,const spi_cs_t *pCs){
+    regAddr CStrisAddr = getTRIS(pCs->port);         /**< Get the TRIS address for the CS line   */
+    *CStrisAddr &= ~((0x0001)<<(pCs->bitNumber));    /**< Config CS line as GPIO output  */
+    spi_deassertCS(pSpi,pCs);                        /**< Deasserts the CS line  (CS <- 1) */
     return SPI_OK;
 }
 //------------------------------------------------------------------------------
-spi_err_t   spi_deassertCS(const  spi_desc_t *pSpi){
-    regAddr CSlatAddr = getLAT(pSpi->spiCS.port);
-    *CSlatAddr |= ((0x0001)<<(pSpi->spiCS.bitNumber));
+spi_err_t   spi_assertCS(const  spi_desc_t *pSpi, const spi_cs_t *pCs){
+    regAddr CSlatAddr = getLAT(pCs->port);
+    *CSlatAddr &= ~((0x0001)<<(pCs->bitNumber));
+    return SPI_OK;
+}
+//------------------------------------------------------------------------------
+spi_err_t   spi_deassertCS(const  spi_desc_t *pSpi, const spi_cs_t *pCs){
+    regAddr CSlatAddr = getLAT(pCs->port);
+    *CSlatAddr |= ((0x0001)<<(pCs->bitNumber));
     return SPI_OK;
 }
 //------------------------------------------------------------------------------
 spi_err_t   spi_transfer_raw_byte(const spi_desc_t *pSpi, uint8_t TxData, uint8_t *pRxData){
     uint16_t    dummy;   
     if (pSpi->spiDataFormat != BITS8) return SPI_BAD_DATA_FORMAT;
-    switch(pSpi->spiID)
-    {
-        case _SPI1:
-            while(SPI1STATbits.SPITBF);     // Attente buffer Tx vide
-            SPI1BUF = TxData;
-            while(!IFS0bits.SPI1IF);        // Attente fin Tx
-            dummy = SPI1BUF;           // SPIxBUFF MUST be read...
-            IFS0bits.SPI1IF = 0;
-            break;
-            
-        case _SPI2:
-            while(SPI2STATbits.SPITBF);     // Attente buffer Tx vide
-            SPI2BUF = TxData;
-            while(!IFS2bits.SPI2IF);        // Attente fin Tx
-            dummy = SPI2BUF;           // SPIxBUFF MUST be read...
-            IFS2bits.SPI2IF = 0;
-            break;
-        default: return SPI_UNKNOWN_MODULE;
-    }
+    
+    while (*(pSpi->pSPIxSTAT) & SPITBF_MASK);   /**< Wait for empty TX Buffer   */
+    *(pSpi->pSPIBUF) = TxData;                  /**< Fill the TX buffer with data to send   */
+    while(!(*(pSpi->pIFSreg) & pSpi->IFSMask)); /**< Wait for the end of Tx */
+    dummy = *(pSpi->pSPIBUF);                   /**< SPIxBUFF MUST be read...   */
+    ClrIFS();                                   /**< Clear SPIxIF Flag  */
+    
     if (pRxData != NULL) *pRxData = (uint8_t)dummy;
     return SPI_OK;
 }
@@ -171,25 +165,13 @@ spi_err_t   spi_transfer_raw_byte(const spi_desc_t *pSpi, uint8_t TxData, uint8_
 spi_err_t   spi_transfer_raw_word(const spi_desc_t *pSpi, uint16_t TxData, uint16_t *pRxData){
     uint16_t    dummy;   
     if (pSpi->spiDataFormat != BITS16) return SPI_BAD_DATA_FORMAT;
-    switch(pSpi->spiID)
-    {
-        case _SPI1:
-            while(SPI1STATbits.SPITBF);     // Attente buffer Tx vide
-            SPI1BUF = TxData;
-            while(!IFS0bits.SPI1IF);        // Attente fin Tx
-            dummy = SPI1BUF;           // SPIxBUFF MUST be read...
-            IFS0bits.SPI1IF = 0;
-            break;
-            
-        case _SPI2:
-            while(SPI2STATbits.SPITBF);     // Attente buffer Tx vide
-            SPI2BUF = TxData;
-            while(!IFS2bits.SPI2IF);        // Attente fin Tx
-            dummy = SPI2BUF;           // SPIxBUFF MUST be read...
-            IFS2bits.SPI2IF = 0;
-            break;
-        default: return SPI_UNKNOWN_MODULE;
-    }
+    
+    while (*(pSpi->pSPIxSTAT) & SPITBF_MASK);   /**< Wait for empty TX Buffer   */
+    *(pSpi->pSPIBUF) = TxData;                  /**< Fill the TX buffer with data to send   */
+    while(!(*(pSpi->pIFSreg) & pSpi->IFSMask)); /**< Wait for the end of Tx */
+    dummy = *(pSpi->pSPIBUF);                   /**< SPIxBUFF MUST be read...   */
+    ClrIFS();                                   /**< Clear SPIxIF Flag  */
+    
     if (pRxData != NULL) *pRxData = dummy;
     return SPI_OK;
 }

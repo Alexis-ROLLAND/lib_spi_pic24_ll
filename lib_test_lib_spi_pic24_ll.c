@@ -15,25 +15,20 @@
 
 /* Déclarations des variables globales 	*/
 spi_desc_t  mySpi;
+spi_cs_t    cs_pin;
 
 /*	Implémentation du code */
 void Initialiser(void)
 {
     spi_config_t    spiCfg;
-    gpio_pin_t      cs;
+    
     
     // Leds
     TRISA &= 0xFF00;
     LATA = 0;
     
-    /*
-    // CS PIN - RA1 for test #1 (LED1)
-    cs.port = GPIO_PORTA;
-    cs.bitNumber  = 1;
-    */
-    
-    cs.port = GPIO_PORTD;   /**< P79_EECS is on RD12    */
-    cs.bitNumber = 12;      /**< P79_EECS is on RD12    */
+    cs_pin.port = GPIO_PORTD;   /**< P79_EECS is on RD12    */
+    cs_pin.bitNumber = 12;      /**< P79_EECS is on RD12    */
     
     
     // SPI
@@ -43,15 +38,14 @@ void Initialiser(void)
     spiCfg.spiSamplePoint = MID_SMP;
     spiCfg.spiPrimaryPrescaler = PRI_PRE_4;
     spiCfg.spiSecondaryPrescaler = SEC_PRE_8;
-    spiCfg.spiCS = cs;
-    
-    
+       
     spi_init(SPI_MODULE, &spiCfg, &mySpi);
+    spi_init_cs(&mySpi, &cs_pin);
     
     // Send WREN
-    spi_assertCS(&mySpi);
+    spi_assertCS(&mySpi, &cs_pin);
     spi_transfer_raw_byte(&mySpi, 0x06, NULL);  // Send WREN Code
-    spi_deassertCS(&mySpi);
+    spi_deassertCS(&mySpi, &cs_pin);
     
 
 }
@@ -68,11 +62,11 @@ void    mainTask(void){
     
     // Write 16 bytes @0x00 to @0x0F, with address values
     if (!WriteOnce) {
-        spi_assertCS(&mySpi);
+        spi_assertCS(&mySpi, &cs_pin);
         spi_transfer_raw_byte(&mySpi, 0x02, NULL);  // Send Write Code
         spi_transfer_raw_bytes(&mySpi, StartAddr, NULL, 2);  // Send Address
         spi_transfer_raw_bytes(&mySpi, DataOut, NULL, 16);  // Send Data
-        spi_deassertCS(&mySpi);
+        spi_deassertCS(&mySpi, &cs_pin);
         ++WriteOnce;
     }
     __delay_ms(500);
@@ -80,11 +74,11 @@ void    mainTask(void){
     
     
     // Read 16 bytes
-    spi_assertCS(&mySpi);
+    spi_assertCS(&mySpi, &cs_pin);
     spi_transfer_raw_byte(&mySpi, 0x03, NULL);  // Send Read Code
     spi_transfer_raw_bytes(&mySpi, StartAddr, NULL, 2);  // Send Address
     spi_transfer_raw_bytes(&mySpi, NULL, DataIn, 16);
-    spi_deassertCS(&mySpi);
+    spi_deassertCS(&mySpi, &cs_pin);
     
     uint8_t i;
     for (i=0;i<16;++i){
