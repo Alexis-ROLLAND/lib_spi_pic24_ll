@@ -8,6 +8,7 @@ build/
 debug/
 dist/
 .generated_files/
+html/
 
 # Node artifact files
 node_modules/
