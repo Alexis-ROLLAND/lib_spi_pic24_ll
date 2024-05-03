@@ -11,11 +11,15 @@
 #define	__LIB_SPI_PIC24_LL_H__
 #include <xc.h>
 #include <stddef.h>     // for size_t
+#include <stdint.h>
 
 //-----------------------------------------------------------------------------
 typedef uint16_t*    regAddr;       /**<    Alias to uint16_t*  */
 //-----------------------------------------------------------------------------
-// Enums & types for the CS support
+/** 
+ * Enums & types for the CS support : gpio_port_t
+ *          Enumeration of the PIC24 GPIO Ports 
+ */
 typedef enum {
             GPIO_PORTA = 0,             /**< GPIO port is PORTA */
             GPIO_PORTB = 1,             /**< GPIO port is PORTB */
@@ -26,6 +30,10 @@ typedef enum {
             GPIO_PORTG = 6              /**< GPIO port is PORTG */                
 } gpio_port_t;
 
+/** 
+ * Enums & types for the CS support : spi_cs_t
+ *          A "cs" line is a GPIO line : port[bitNumber]
+ */
 typedef struct{
     gpio_port_t port;                       /**<    GPIO Port   */
     uint8_t     bitNumber;                  /**<    Bit of GPIO register associated with GPIO   */
@@ -34,7 +42,9 @@ typedef struct{
 #define getTRIS(port) {Tab_TRIS_addr[(uint8_t)port]};   /**< macro based getTRIS  */
 #define getLAT(port) {Tab_LAT_addr[(uint8_t)port]};     /**< macro based getLAT  */
 //-----------------------------------------------------------------------------
-// Masks for SPIxSTAT register
+/**
+ *  Masks for SPIxSTAT register
+ */
 #define SPIEN_MASK  (0x0001 << 15)  /**< SPIxSTAT[15] */
 #define SPITBF_MASK (0x0001 << 1)   /**< SPIxSTAT[1] */
 #define SPIRBF_MASK (0x0001 << 0)   /**< SPIxSTAT[0] */
@@ -52,8 +62,7 @@ typedef struct{
 #define SPI2IF_MASK (0x0001 << 1)   /**< IFS2[1] */
 
 //-----------------------------------------------------------------------------
-#define ClrIFS()    {*(pSpi->pIFSreg) &= ~pSpi->IFSMask;}
-
+#define ClrIFS()    {*(pSpi->pIFSreg) &= ~pSpi->IFSMask;}   /**< Clear IFS bit Macro    */
 
 //-----------------------------------------------------------------------------
 typedef enum    {   _SPI1,      /**< Value for SPI1 module */
@@ -138,14 +147,14 @@ typedef struct {
 /**
  * @brief   Initialize the SPI module
  * 
- * @param[in]   spi_id  ID of the target SPI module (_SPI1 or _SPI2)
+ * @param       spi_id  ID of the target SPI module (_SPI1 or _SPI2)
  * @param[in]   pSpiCFG Address of the fully completed spi_config_t structure
  * @param[out]  pSPI    Spi module descriptor (fully completed)  	
  * 
  * @return  SPI_OK  on success
  * @return  SPI_UNKNOWN_MODULE if SPI module is unknown 
  */
-spi_err_t   spi_init(spi_id_t spi_id, spi_config_t* pSpiCFG, spi_desc_t *pSpi);
+spi_err_t   spi_init(spi_id_t spi_id, const spi_config_t* pSpiCFG, spi_desc_t *pSpi);
 
 /**
  * @brief   Configures the CS line as GPIO output
@@ -180,7 +189,7 @@ spi_err_t   spi_deassertCS(const  spi_desc_t *pSpi, const spi_cs_t *pCs);
   *             Data format is 8 bits
   * @param[in]  pSpi    Address of the initialized Spi module descriptor
   * @param[in]  pCs  Address of the Cs structure for the Chip Select
-  * @param[in]  TxData  Data to Tx
+  * @param      TxData  Byte to Tx
   * @param[out] pRxData Address of the location to store the Rx data or NULL   	
   * 
   * @return     SPI_OK 
@@ -196,7 +205,7 @@ spi_err_t   spi_transfer_raw_byte(const spi_desc_t *pSpi, uint8_t TxData, uint8_
   *             Data format is 16 bits
   * @param[in]  pSpi    Address of the initialized Spi module descriptor
   * @param[in]  pCs  Address of the Cs structure for the Chip Select
-  * @param[in]  TxData  Data to Tx
+  * @param      TxData  Word to Tx
   * @param[out] pRxData Address of the location to store the Rx data or NULL   	
   * 
   * @return     SPI_OK 
@@ -249,10 +258,10 @@ spi_err_t   spi_transfer_raw_words(const spi_desc_t *pSpi, const uint16_t *pTxDa
  * implement a register based access scheme (8 bits mode).
  * 
  * @param[in]   pSpi    Address of the Spi module descriptor
- * @param[in]   pCs  Address of the Cs structure for the Chip Select
- * @param[in]   reg     register address to transfer data to/from
+ * @param[in]   pCs     Address of the Cs structure for the Chip Select
+ * @param       reg     register address to transfer data to/from
  * @param[in]   dataOut byte to send
- * @param[out]   pdataIn Address of the location of the read data or NULL 
+ * @param[out]  pdataIn Address of the location of the read data or NULL 
  * 
  * @return     SPI_OK
  * @return     SPI_BAD_DATA_FORMAT
@@ -266,8 +275,8 @@ spi_err_t   spi_transfer_byte_reg(const spi_desc_t *pSpi, uint8_t reg, uint8_t d
  * implement a register based access scheme (16 bits mode).
  * 
  * @param[in]   pSpi    Address of the Spi module descriptor
- * @param[in]  pCs  Address of the Cs structure for the Chip Select
- * @param[in]   reg     register address to transfer data to/from
+ * @param[in]   pCs     Address of the Cs structure for the Chip Select
+ * @param       reg     register address to transfer data to/from
  * @param[in]   dataOut Word to send
  * @param[out]  pdataIn Address of the location of the read data or NULL 
  * 
@@ -283,8 +292,8 @@ spi_err_t   spi_transfer_word_reg(const spi_desc_t *pSpi, uint16_t reg, uint16_t
  * implement a register based access scheme (8 bits mode).
  * 
  * @param[in]   pSpi    Address of the Spi module descriptor
- * @param[in]   pCs  Address of the Cs structure for the Chip Select
- * @param[in]   reg     first register address to transfer data to/from
+ * @param[in]   pCs     Address of the Cs structure for the Chip Select
+ * @param       reg     first register address to transfer data to/from
  * @param[in]   out     buffer to send data from, set NULL if only receiving
  * @param[out]  in      buffer to read into, set NULL if only sending
  * @param[in]   len     number of bytes to transfer
@@ -302,7 +311,7 @@ spi_err_t   spi_transfer_byte_regs(const spi_desc_t *pSpi, uint8_t reg, const ui
  * 
  * @param[in]   pSpi    Address of the Spi module descriptor
  * @param[in]   pCs     Address of the Cs structure for the Chip Select
- * @param[in]   reg     first register address to transfer data to/from
+ * @param       reg     first register address to transfer data to/from
  * @param[in]   out     buffer to send data from, set NULL if only receiving
  * @param[out]  in      buffer to read into, set NULL if only sending
  * @param[in]   len     number of Words to transfer

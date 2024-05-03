@@ -32,7 +32,7 @@ const   regAddr Tab_LAT_addr[]={    (regAddr)&LATA,
 };
 //-----------------------------------------------------------------------------
 /*	Implémentation du code */
-spi_err_t   spi_init(spi_id_t spi_id, spi_config_t* pSpiCFG, spi_desc_t *pSpi)
+spi_err_t   spi_init(spi_id_t spi_id, const spi_config_t* pSpiCFG, spi_desc_t *pSpi)
 {
     uint16_t    tmpReg;
     pSpi->spiID = spi_id;
