@@ -14,7 +14,10 @@
 #include <stdint.h>
 
 //-----------------------------------------------------------------------------
+#ifndef REG_ADDR_TYPE
+#define REG_ADDR_TYPE
 typedef uint16_t*    regAddr;       /**<    Alias to uint16_t*  */
+#endif
 //-----------------------------------------------------------------------------
 /** 
  * Enums & types for the CS support : gpio_port_t
