@@ -152,7 +152,7 @@ typedef struct {
  * 
  * @param       spi_id  ID of the target SPI module (_SPI1 or _SPI2)
  * @param[in]   pSpiCFG Address of the fully completed spi_config_t structure
- * @param[out]  pSPI    Spi module descriptor (fully completed)  	
+ * @param[out]  pSPI    Spi module descriptor (Completed (without CS) )  	
  * 
  * @return  SPI_OK  on success
  * @return  SPI_UNKNOWN_MODULE if SPI module is unknown 
@@ -162,7 +162,9 @@ spi_err_t   spi_init(spi_id_t spi_id, const spi_config_t* pSpiCFG, spi_desc_t *p
 /**
  * @brief   Configures the CS line as GPIO output
  * 
- * @param
+ * @param[out]  pSpi    Spi module descriptor (with CS configured)
+ * @param[in]   pCs     Address of the configured spi_cs_t "object"
+ *  
  * @return  SPI_OK   
  */
 spi_err_t   spi_init_cs(spi_desc_t *pSpi,const spi_cs_t *pCs);
